@@ -40,7 +40,7 @@ def fetch_image(s, image_url, filename):
 
     # Write to stdout
     uprint(image_url)
-    uprint('  writing to {file}...'.format(filename))
+    uprint('  writing to {file}...'.format(file=filename))
 
     with open(image_file, 'wb') as fd:
         r = s.get(image_url, stream=True)
@@ -108,14 +108,11 @@ def map_archive(page_url, skip_first=False):
             if skip_first:
                 skip_first = False
             else:
-                # Append the URLs to the archive file
-                fd.write(','.join((page_url, image_url)) + '\n')
-
                 # Write to stdout
                 uprint(page_url)
                 uprint('  ' + image_url)
 
-                # Append the page and image URLs to the archive file
+                # Append the URLs to the archive file
                 fd.write(','.join((page_url, image_url)) + '\n')
 
             # Increment to the next page and continue
