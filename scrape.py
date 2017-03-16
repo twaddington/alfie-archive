@@ -43,7 +43,7 @@ def fetch_image(s, image_url, filename):
             fd.write(chunk)
         uprint('DONE')
 
-def archive():
+def fetch_archive():
     ensure_archive_dir()
 
     with open(ARCHIVE_FILE, 'r') as fd:
@@ -57,7 +57,7 @@ def archive():
             path = urlparse(page_url).path
 
             # Sanitize URL path for filename
-            path_for_filename = path.strip('/').replace('/', '_')
+            path_for_filename = path.strip('/').split('/')[-1]
 
             # Build the image filename
             filename = 'Alfie_{index:04}_{path}.jpg'.format(index=index,
@@ -67,7 +67,7 @@ def archive():
             # Increment the index
             index += 1
 
-def map():
+def map_archive():
     with open(ARCHIVE_FILE, 'w') as fd:
         s = requests.Session()
 
@@ -75,32 +75,28 @@ def map():
         while next_page_url is not None:
             r = s.get(next_page_url)
 
-            # ...
+            # Parse the response
             soup = BeautifulSoup(r.text, 'html.parser')
 
-            # ...
+            # Find the image URL
             image_url = soup.find(id='comic').img['src']
             uprint(image_url)
 
-            # ...
+            # Write the page and image URLs to the archive file
             fd.write(','.join((next_page_url, image_url)) + '\n')
 
-            # ...
+            # Find the next page URL to fetch
             try:
                 next_page_url = soup.find_all('a', class_='comic-nav-next')[0]['href']
                 uprint(next_page_url)
             except:
                 next_page_url = None
 
-def update():
-    # todo if archive.txt exists, get the last line and map from there
-    pass
-
 def main():
-    # if archive.txt exists, skip map, unless force
-    #map()
+    if not os.path.isfile(ARCHIVE_FILE):
+        map_archive()
 
-    archive()
+    fetch_archive()
 
 if __name__ == '__main__':
     try:
