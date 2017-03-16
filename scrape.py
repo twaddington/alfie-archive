@@ -24,26 +24,31 @@ def ensure_archive_dir():
     if not os.path.exists(ARCHIVE_DIR):
         os.makedirs(ARCHIVE_DIR)
 
+def last_page_in_archive():
+    last_page_url = None
+
+    with open(ARCHIVE_FILE, 'r') as fd:
+        for line in fd:
+            last_page_url, _ = line.strip().split(',')
+    return last_page_url
+
 def fetch_image(s, image_url, filename):
     image_file = os.path.join(ARCHIVE_DIR, filename)
 
-    uprint(image_url)
-
     if os.path.isfile(image_file):
-        uprint('  skipping...')
         return
 
-    with open(image_file, 'wb') as fd:
-        uprint('  fetching...', newline=False)
-        r = s.get(image_url, stream=True)
-        uprint('DONE')
+    # Write to stdout
+    uprint(image_url)
+    uprint('  writing to {file}...'.format(filename))
 
-        uprint('  saving...', newline=False)
+    with open(image_file, 'wb') as fd:
+        r = s.get(image_url, stream=True)
+
         for chunk in r.iter_content(chunk_size=128):
             fd.write(chunk)
-        uprint('DONE')
 
-def fetch_archive():
+def download_images_from_archive():
     ensure_archive_dir()
 
     with open(ARCHIVE_FILE, 'r') as fd:
@@ -60,6 +65,7 @@ def fetch_archive():
             path_for_filename = path.strip('/').split('/')[-1]
 
             # Build the image filename
+            # todo better filename?
             filename = 'Alfie_{index:04}_{path}.jpg'.format(index=index,
                     path=path_for_filename)
             fetch_image(s, image_url, filename)
@@ -67,36 +73,64 @@ def fetch_archive():
             # Increment the index
             index += 1
 
-def map_archive():
-    with open(ARCHIVE_FILE, 'w') as fd:
+def get_image_url_from_soup(soup):
+    """
+    """
+    return soup.find(id='comic').img['src']
+
+def get_next_page_from_soup(soup):
+    """
+    """
+    try:
+        next_page_url = soup.find_all('a',
+                class_='comic-nav-next')[0]['href']
+    except:
+        next_page_url = None
+
+    return next_page_url
+
+def map_archive(page_url, skip_first=False):
+    with open(ARCHIVE_FILE, 'a') as fd:
         s = requests.Session()
 
-        next_page_url = ARCHIVE_URL_START
-        while next_page_url is not None:
-            r = s.get(next_page_url)
+        while page_url is not None:
+            r = s.get(page_url)
 
             # Parse the response
             soup = BeautifulSoup(r.text, 'html.parser')
 
             # Find the image URL
-            image_url = soup.find(id='comic').img['src']
-            uprint(image_url)
+            image_url = get_image_url_from_soup(soup)
 
-            # Write the page and image URLs to the archive file
-            fd.write(','.join((next_page_url, image_url)) + '\n')
+            # Find the next page URL
+            next_page_url = get_next_page_from_soup(soup)
 
-            # Find the next page URL to fetch
-            try:
-                next_page_url = soup.find_all('a', class_='comic-nav-next')[0]['href']
-                uprint(next_page_url)
-            except:
-                next_page_url = None
+            if skip_first:
+                skip_first = False
+            else:
+                # Append the URLs to the archive file
+                fd.write(','.join((page_url, image_url)) + '\n')
+
+                # Write to stdout
+                uprint(page_url)
+                uprint('  ' + image_url)
+
+                # Append the page and image URLs to the archive file
+                fd.write(','.join((page_url, image_url)) + '\n')
+
+            # Increment to the next page and continue
+            page_url = next_page_url
 
 def main():
-    if not os.path.isfile(ARCHIVE_FILE):
-        map_archive()
+    if os.path.isfile(ARCHIVE_FILE):
+        uprint('Adding new pages to archive...')
+        map_archive(last_page_in_archive(), skip_first=True)
+    else:
+        uprint('Building site archive...')
+        map_archive(ARCHIVE_URL_START)
 
-    fetch_archive()
+    uprint('Fetching images...')
+    download_images_from_archive()
 
 if __name__ == '__main__':
     try:
