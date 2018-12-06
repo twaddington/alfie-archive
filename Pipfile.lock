@@ -1,0 +1,25 @@
+{
+    "default": {
+        "beautifulsoup4": {
+            "version": "==4.5.3",
+            "hash": "sha256:50e031957fe5d72c7ff6c10575d07b83a6462d12d12af03666b0dd1d9aa81c43"
+        },
+        "requests": {
+            "version": "==2.13.0",
+            "hash": "sha256:1a720e8862a41aa22e339373b526f508ef0c8988baf48b84d3fc891a8e237efb"
+        }
+    },
+    "develop": {},
+    "_meta": {
+        "sources": [
+            {
+                "url": "https://pypi.python.org/simple",
+                "verify_ssl": true
+            }
+        ],
+        "requires": {},
+        "hash": {
+            "sha256": "6cd0b48d191df38cd9e8dd26c76050916051f1ad22a411fb63e2f33556332044"
+        }
+    }
+}
